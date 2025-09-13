@@ -37,8 +37,7 @@ async def on_ready():
         # Pokud chceš, smaž zprávy po sync
         channel = bot.get_channel(config["channel_id"])
         message = await channel.fetch_message(config["message_id"])
-        await message.delete()
-        print("SYNC dokončen a zpráva s reakcemi smazána.")
+        print("SYNC dokončen")
 
     await bot.close()  # Ukončí bota po dokončení
 
