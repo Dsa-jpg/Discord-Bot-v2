@@ -1,0 +1,6 @@
+{
+    "yaml.schemas": {
+        "kubernetes": "*.yaml",
+        "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.32.1-standalone-strict/all.json": "file:///g%3A/VS-code/Python/discord_bot/src/config/config.yaml"
+    }
+}
