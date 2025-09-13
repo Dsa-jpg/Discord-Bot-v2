@@ -28,5 +28,6 @@ jobs:
         env:
           DISCORD_KEY: ${{ secrets.DISCORD_KEY }}
         run: |
-          python src/bot/sync_roles.py
+          python src/bot/bot.py
+          
 
