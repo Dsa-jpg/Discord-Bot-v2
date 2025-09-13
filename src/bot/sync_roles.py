@@ -2,10 +2,12 @@ import asyncio
 import discord
 import yaml
 import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from cogs.reaction_roles import ReactionRoles
 from dotenv import load_dotenv
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_KEY")
