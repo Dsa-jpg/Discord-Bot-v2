@@ -1,14 +1,9 @@
-import sys
-import os
 import asyncio
 import discord
 import yaml
-from dotenv import load_dotenv
-
-# Přidání root projektu do sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
+import os
 from cogs.reaction_roles import ReactionRoles
+from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_KEY")
@@ -21,12 +16,11 @@ intents = discord.Intents.all()
 bot = discord.Client(intents=intents)
 bot.config = config
 
-@bot.event
-async def on_ready():
-    print(f"Přihlášen jako {bot.user}")
+async def main():
+    await bot.login(TOKEN)
     cog = ReactionRoles(bot)
-    await cog.sync_all(add_only=True)  # jen přidání chybějících rolí
-    print("SYNC dokončen, bot se zavírá")
+    await cog.sync_all()  # Přímo spustí sync
     await bot.close()
 
-asyncio.run(bot.start(TOKEN))
+if __name__ == "__main__":
+    asyncio.run(main())
