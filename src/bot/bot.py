@@ -16,38 +16,31 @@ with open(CONFIG_PATH, "r", encoding="utf-8") as f:
 
 intents = discord.Intents.all()
 
-
 class MyBot(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix=config["prefix"], intents=intents)
         self.config = config
 
     async def setup_hook(self):
-        COGS_PATH = os.path.join(os.path.dirname(__file__), "../cogs")
-        for filename in os.listdir(COGS_PATH):
-            if filename.endswith(".py") and filename != "__init__.py":
-                await self.load_extension(f"cogs.{filename[:-3]}")
-
+        await self.load_extension("cogs.reaction_roles")
 
 bot = MyBot()
-
 
 @bot.event
 async def on_ready():
     print(f"Přihlášen jako {bot.user}")
-
-
-# Manuální příkaz pro synchronizaci rolí
-@bot.command(name="sync_roles")
-@commands.has_permissions(administrator=True)
-async def sync_roles(ctx):
     cog = bot.get_cog("ReactionRoles")
-    if not cog:
-        await ctx.send("ReactionRoles cog nenalezen!")
-        return
-    await cog.sync_all()
-    await ctx.send("✅ Synchronizace dokončena!")
+    if cog:
+        print("Spouštím sync všech reakcí...")
+        await cog.sync_all()
+        
+        # Pokud chceš, smaž zprávy po sync
+        channel = bot.get_channel(config["channel_id"])
+        message = await channel.fetch_message(config["message_id"])
+        await message.delete()
+        print("SYNC dokončen a zpráva s reakcemi smazána.")
 
+    await bot.close()  # Ukončí bota po dokončení
 
 if __name__ == "__main__":
     bot.run(TOKEN)
