@@ -27,7 +27,5 @@ async def on_ready():
     await cog.sync_all()
     await bot.close()  
 
-async def main():
-    await bot.start(TOKEN)
-
-asyncio.run(main())
+if __name__ == "__main__":
+    bot.run(TOKEN)
