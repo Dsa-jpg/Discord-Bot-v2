@@ -22,24 +22,26 @@ class MyBot(commands.Bot):
         self.config = config
 
     async def setup_hook(self):
+    
         await self.load_extension("cogs.reaction_roles")
+        
+   
+        cog = self.get_cog("ReactionRoles")
+        if cog:
+            print("Spouštím sync všech reakcí...")
+            await cog.sync_all()
+            print("SYNC dokončen")
+        else:
+            print("Cog ReactionRoles nebyl nalezen!")
+
+   
+        await self.close()
 
 bot = MyBot()
 
 @bot.event
 async def on_ready():
     print(f"Přihlášen jako {bot.user}")
-    cog = bot.get_cog("ReactionRoles")
-    if cog:
-        print("Spouštím sync všech reakcí...")
-        await cog.sync_all()
-        
-        # Pokud chceš, smaž zprávy po sync
-        channel = bot.get_channel(config["channel_id"])
-        message = await channel.fetch_message(config["message_id"])
-        print("SYNC dokončen")
-
-    await bot.close()  # Ukončí bota po dokončení
 
 if __name__ == "__main__":
     bot.run(TOKEN)
