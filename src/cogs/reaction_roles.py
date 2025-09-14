@@ -1,8 +1,10 @@
 import discord
 from discord.ext import commands
 import json
-import io
 from discord import File
+import os
+from datetime import datetime
+import matplotlib.pyplot as plt
 
 class ReactionRoles(commands.Cog):
     __cog_name__ = "ReactionRoles"
@@ -100,16 +102,22 @@ class ReactionRoles(commands.Cog):
         if not guild:
             print("SYNC: Guild nenalezena!")
             return
+
         channel = guild.get_channel(config["channel_id"])
         if not channel:
             print("SYNC: Channel nenalezen!")
             return
+
+        log_channel = guild.get_channel(config.get("log_channel_id"))  # sem pošli statistiky
+        if not log_channel:
+            print("SYNC: Log channel nenalezen!")
+        
         try:
             message = await channel.fetch_message(config["message_id"])
         except discord.NotFound:
             print("SYNC: Message nenalezena!")
             return
-    
+
         # Pouze vybrané role s vlastním emoji
         allowed_roles = {
             "<:AP_IT:1021022218999832597>": "AP_IT",
@@ -121,13 +129,14 @@ class ReactionRoles(commands.Cog):
             "<:BIO_OBEC:1022495980169478154>": "BIO_OBEC",
             "<:CH:1021030839724822598>": "CH",
             "<:EKO:1021031106293796864>": "EKO",
-            "<:FY:102103133711055257>": "FY",
+            "<:FY:102103133711055257": "FY",
             "<:GEO:1021031673980264558>": "GEO",
             "<:MER_TECH:1021032445539274822>": "MER_TECH"
         }
-    
-        stats = {"added": [], "errors": []}
-    
+
+        summary = {}  # pro JSON + graf
+        operations = []  # log akcí
+
         async def send_dm(member, role_name, emoji_str):
             try:
                 dm_embed = discord.Embed(
@@ -140,57 +149,65 @@ class ReactionRoles(commands.Cog):
                 await member.send(embed=dm_embed)
             except discord.Forbidden:
                 print(f"Nelze poslat DM uživateli {member}")
-    
+
         for emoji_str, role_name in allowed_roles.items():
             role = discord.utils.get(guild.roles, name=role_name)
             if not role:
-                stats["errors"].append({"role": role_name, "reason": "role_not_found"})
                 print(f"SYNC: Role {role_name} nenalezena!")
                 continue
-    
-            # Najít reakci podle vlastního emoji
+
             reaction = None
             for r in message.reactions:
                 if str(r.emoji) == emoji_str:
                     reaction = r
                     break
-    
+
             reacted_users = [u.id async for u in reaction.users() if not u.bot] if reaction else []
             members_with_role = [m.id for m in role.members]
-    
-            # Přidat roli těm, kdo zareagovali, ale roli nemají
+
+            summary[role_name] = len(role.members)
+
             for user_id in reacted_users:
                 if user_id not in members_with_role:
                     member = guild.get_member(user_id)
                     if member is None:
-                        stats["errors"].append({"role": role_name, "user_id": user_id, "reason": "not_in_cache"})
-                        print(f"Uživatel s ID {user_id} nenalezen v cache.")
                         continue
                     await member.add_roles(role)
                     await send_dm(member, role_name, emoji_str)
-                    stats["added"].append({"user": str(member), "role": role_name})
+                    operations.append({"user": str(member), "role": role_name, "emoji": emoji_str})
                     print(f"SYNC: Přidána role {role_name} uživateli {member}")
-    
-        # JSON export
-        json_data = json.dumps(stats, indent=4, ensure_ascii=False)
-        file = io.BytesIO(json_data.encode("utf-8"))
-        discord_file = File(file, filename="sync_report.json")
-    
-        # Embed shrnutí
-        embed = discord.Embed(
-            title="📊 Výsledek týdenního syncu rolí",
-            description=f"Server: **{guild.name}**",
-            color=0x1abc9c
-        )
-        embed.add_field(name="✅ Přidáno rolí", value=str(len(stats["added"])), inline=True)
-        embed.add_field(name="⚠️ Chyby", value=str(len(stats['errors'])), inline=True)
-        embed.set_footer(text="Automatický týdenní sync")
-    
-        log_channel = guild.get_channel(config.get("log_channel_id"))
+
+        # --- export do JSON ---
+        os.makedirs("logs", exist_ok=True)
+        timestamp = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
+        json_path = f"logs/sync_{timestamp}.json"
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump({"summary": summary, "operations": operations}, f, ensure_ascii=False, indent=4)
+
+        # --- vytvořit graf ---
+        plt.figure(figsize=(10,6))
+        plt.bar(summary.keys(), summary.values(), color="skyblue")
+        plt.xticks(rotation=45, ha="right")
+        plt.ylabel("Počet členů")
+        plt.title("Počet členů v rolích po synchronizaci")
+        plt.tight_layout()
+        chart_path = f"logs/sync_{timestamp}.png"
+        plt.savefig(chart_path)
+        plt.close()
+
+        # --- poslat embed do log kanálu ---
         if log_channel:
-            await log_channel.send(embed=embed, file=discord_file)
-    
-        print("SYNC dokončen! Přidány pouze nové role podle reakcí.")
+            embed = discord.Embed(
+                title="📊 Statistiky synchronizace role",
+                description=f"Dokončeno! Přidány pouze nové role podle reakcí.",
+                color=0x3498db
+            )
+            embed.add_field(name="Celkový počet rolí", value=str(len(summary)), inline=True)
+            embed.add_field(name="Celkový počet operací", value=str(len(operations)), inline=True)
+            await log_channel.send(embed=embed, file=discord.File(json_path))
+            await log_channel.send(file=discord.File(chart_path))
+
+        print("SYNC dokončen! JSON + graf odeslány do log kanálu.")
 
 
 
