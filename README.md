@@ -1,0 +1,1 @@
+[![Sync Discord Roles Weekly](https://github.com/Dsa-jpg/Discord-Bot-v2/actions/workflows/sync_roles.yml/badge.svg?branch=main)](https://github.com/Dsa-jpg/Discord-Bot-v2/actions/workflows/sync_roles.yml)
