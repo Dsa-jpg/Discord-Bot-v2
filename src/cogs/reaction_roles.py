@@ -1,5 +1,8 @@
 import discord
 from discord.ext import commands
+import json
+import io
+from discord import File
 
 class ReactionRoles(commands.Cog):
     __cog_name__ = "ReactionRoles"
@@ -106,7 +109,7 @@ class ReactionRoles(commands.Cog):
         except discord.NotFound:
             print("SYNC: Message nenalezena!")
             return
-
+    
         # Pouze vybrané role s vlastním emoji
         allowed_roles = {
             "<:AP_IT:1021022218999832597>": "AP_IT",
@@ -118,11 +121,13 @@ class ReactionRoles(commands.Cog):
             "<:BIO_OBEC:1022495980169478154>": "BIO_OBEC",
             "<:CH:1021030839724822598>": "CH",
             "<:EKO:1021031106293796864>": "EKO",
-            "<:FY:102103133711055257": "FY",
+            "<:FY:102103133711055257>": "FY",
             "<:GEO:1021031673980264558>": "GEO",
             "<:MER_TECH:1021032445539274822>": "MER_TECH"
         }
-
+    
+        stats = {"added": [], "errors": []}
+    
         async def send_dm(member, role_name, emoji_str):
             try:
                 dm_embed = discord.Embed(
@@ -135,34 +140,56 @@ class ReactionRoles(commands.Cog):
                 await member.send(embed=dm_embed)
             except discord.Forbidden:
                 print(f"Nelze poslat DM uživateli {member}")
-
+    
         for emoji_str, role_name in allowed_roles.items():
             role = discord.utils.get(guild.roles, name=role_name)
             if not role:
+                stats["errors"].append({"role": role_name, "reason": "role_not_found"})
                 print(f"SYNC: Role {role_name} nenalezena!")
                 continue
-
+    
             # Najít reakci podle vlastního emoji
             reaction = None
             for r in message.reactions:
                 if str(r.emoji) == emoji_str:
                     reaction = r
                     break
-
+    
             reacted_users = [u.id async for u in reaction.users() if not u.bot] if reaction else []
             members_with_role = [m.id for m in role.members]
-
+    
             # Přidat roli těm, kdo zareagovali, ale roli nemají
             for user_id in reacted_users:
                 if user_id not in members_with_role:
                     member = guild.get_member(user_id)
                     if member is None:
+                        stats["errors"].append({"role": role_name, "user_id": user_id, "reason": "not_in_cache"})
                         print(f"Uživatel s ID {user_id} nenalezen v cache.")
                         continue
                     await member.add_roles(role)
                     await send_dm(member, role_name, emoji_str)
+                    stats["added"].append({"user": str(member), "role": role_name})
                     print(f"SYNC: Přidána role {role_name} uživateli {member}")
-
+    
+        # JSON export
+        json_data = json.dumps(stats, indent=4, ensure_ascii=False)
+        file = io.BytesIO(json_data.encode("utf-8"))
+        discord_file = File(file, filename="sync_report.json")
+    
+        # Embed shrnutí
+        embed = discord.Embed(
+            title="📊 Výsledek týdenního syncu rolí",
+            description=f"Server: **{guild.name}**",
+            color=0x1abc9c
+        )
+        embed.add_field(name="✅ Přidáno rolí", value=str(len(stats["added"])), inline=True)
+        embed.add_field(name="⚠️ Chyby", value=str(len(stats['errors'])), inline=True)
+        embed.set_footer(text="Automatický týdenní sync")
+    
+        log_channel = guild.get_channel(config.get("log_channel_id"))
+        if log_channel:
+            await log_channel.send(embed=embed, file=discord_file)
+    
         print("SYNC dokončen! Přidány pouze nové role podle reakcí.")
 
 
