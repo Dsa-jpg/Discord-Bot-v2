@@ -22,12 +22,11 @@ class MyBot(commands.Bot):
         await self.load_extension("cogs.reaction_roles")
         cog = self.get_cog("ReactionRoles")
         if cog:
-            print("Spouštím automatický sync všech reakcí...")
+            print("Spouštím sync všech reakcí...")
             await cog.sync_all()
             print("SYNC dokončen a log odeslán!")
-        else:
-            print("Cog ReactionRoles nebyl nalezen!")
-        await self.close()
+        await self.close()  # po dokončení se zavře
+
 
 bot = MyBot()
 
