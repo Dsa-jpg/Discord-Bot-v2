@@ -2,7 +2,8 @@ name: Sync Discord Roles Weekly
 
 on:
   schedule:
-    - cron: '0 12 * * 1'  # Každé pondělí v 12:00 UTC
+    - cron: '*/5 * * * *'
+    #- cron: '0 12 * * 1'
   workflow_dispatch:
 
 jobs:
