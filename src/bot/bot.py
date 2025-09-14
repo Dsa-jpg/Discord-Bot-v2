@@ -1,8 +1,5 @@
-import sys
-import os
-import discord
+import sys, os, discord, yaml
 from discord.ext import commands
-import yaml
 from dotenv import load_dotenv
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -22,19 +19,14 @@ class MyBot(commands.Bot):
         self.config = config
 
     async def setup_hook(self):
-    
         await self.load_extension("cogs.reaction_roles")
-        
-   
         cog = self.get_cog("ReactionRoles")
         if cog:
-            print("Spouštím sync všech reakcí...")
+            print("Spouštím automatický sync všech reakcí...")
             await cog.sync_all()
-            print("SYNC dokončen")
+            print("SYNC dokončen a log odeslán!")
         else:
             print("Cog ReactionRoles nebyl nalezen!")
-
-   
         await self.close()
 
 bot = MyBot()
