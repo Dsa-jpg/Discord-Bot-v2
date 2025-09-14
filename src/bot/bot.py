@@ -1,5 +1,8 @@
-import sys, os, discord, yaml
+import sys
+import os
+import discord
 from discord.ext import commands
+import yaml
 from dotenv import load_dotenv
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -20,19 +23,24 @@ class MyBot(commands.Bot):
 
     async def setup_hook(self):
         await self.load_extension("cogs.reaction_roles")
-        cog = self.get_cog("ReactionRoles")
-        if cog:
-            print("Spouštím sync všech reakcí...")
-            await cog.sync_all()
-            print("SYNC dokončen a log odeslán!")
-        await self.close()  # po dokončení se zavře
-
 
 bot = MyBot()
 
 @bot.event
 async def on_ready():
     print(f"Přihlášen jako {bot.user}")
+    cog = bot.get_cog("ReactionRoles")
+    if cog:
+        print("Spouštím sync všech reakcí...")
+        await cog.sync_all()
+
+      
+        channel = bot.get_channel(config["channel_id"])
+        message = await channel.fetch_message(config["message_id"])
+        print("SYNC dokončen a zpráva s reakcemi smazána.")
+        print("SYNC dokončen")
+
+    await bot.close()  
 
 if __name__ == "__main__":
     bot.run(TOKEN)
