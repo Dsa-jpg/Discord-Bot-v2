@@ -1,8 +1,8 @@
-name: Sync Discord Roles Weekly
+name: Sync Discord Roles Every 5 Hours
 
 on:
   schedule:
-    - cron: '0 12 * * 1'
+    - cron: '0 */5 * * *'  # každých 5 hodin
   workflow_dispatch:
 
 jobs:
@@ -39,4 +39,3 @@ jobs:
                -X POST \
                -d '{"content": "✅ Sync workflow dokončeno"}' \
                $DISCORD_WEBHOOK
-
